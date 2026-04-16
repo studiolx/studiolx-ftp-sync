@@ -1,1 +1,41 @@
+name: FTP Inventory Sync
 
+on:
+  schedule:
+    # Runs every weekday at 8:00 AM EST (13:00 UTC)
+    # 1 hour before the Google Apps Script daily sync at 9 AM
+    - cron: '0 13 * * 1-5'
+
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  ftp-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Give the workflow permission to commit files to the repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --upgrade pip
+
+      - name: Run FTP → GitHub sync
+        env:
+          FTP_SWCORP_PASS: ${{ secrets.FTP_SWCORP_PASS }}
+          # FTP_EGLO_PASS: ${{ secrets.FTP_EGLO_PASS }}
+          # FTP_NOURISON_PASS: ${{ secrets.FTP_NOURISON_PASS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided by GitHub Actions
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+        run: python ftp_to_github.py
