@@ -18,7 +18,7 @@ import urllib.error
 VENDORS = [
     {
         'name': 'SW Corp (Anzzi / Spa World / Meditub)',
-        'ftp_host': '208.79.218.238',
+        'ftp_host': 'c122276.sgvps.net',
         'ftp_port': 21,
         'ftp_user': 'swinventory@swcorp.com',
         'ftp_pass': os.environ['FTP_SWCORP_PASS'],
