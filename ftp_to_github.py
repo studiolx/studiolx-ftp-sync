@@ -37,11 +37,11 @@ VENDORS = [
     # },
     # {
     #     'name': 'Nourison',
-    #     'ftp_host': '',
+    #     'ftp_host': 'b2b.nourison.net',
     #     'ftp_port': 21,
-    #     'ftp_user': '',
+    #     'ftp_user': '100559',
     #     'ftp_pass': os.environ.get('FTP_NOURISON_PASS', ''),
-    #     'ftp_path': '/inventory.csv',
+    #     'ftp_path': '/100559/Nourison_Inventory.xlsx',
     #     'repo_path': 'inventory/nourison.csv',
     # },
 ]
