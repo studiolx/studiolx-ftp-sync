@@ -55,7 +55,7 @@ VENDORS = [
     # },
     {
         'name': 'Nourison',
-        'ftp_host': 'ftp.nourison.com',
+        'ftp_host': 'b2b.nourison.net',
         'ftp_port': 21,
         'ftp_user': '100559',
         'ftp_pass': os.environ['FTP_NOURISON_PASS'],
