@@ -57,7 +57,7 @@ VENDORS = [
         'name': 'Nourison',
         'ftp_host': 'ftp.nourison.com',
         'ftp_port': 21,
-        'ftp_user': 'studiolx',
+        'ftp_user': '100559',
         'ftp_pass': os.environ['FTP_NOURISON_PASS'],
         'ftp_path': '/inventory.csv',
         'repo_path': 'inventory/nourison.csv',
