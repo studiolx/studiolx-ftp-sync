@@ -59,7 +59,7 @@ VENDORS = [
         'ftp_port': 21,
         'ftp_user': '100559',
         'ftp_pass': os.environ['FTP_NOURISON_PASS'],
-        'ftp_path': '/100559',
+        'ftp_path': '/100559/Nourison_Inventory.xlsx',
         'repo_path': 'inventory/nourison.csv',
         'convert_excel': True,  # Convert Excel to CSV before committing
     },
