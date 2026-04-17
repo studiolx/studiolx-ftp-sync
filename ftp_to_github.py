@@ -53,8 +53,9 @@ VENDORS = [
     #     'ftp_path': '/inventory.csv',
     #     'repo_path': 'inventory/eglo.csv',
     # },
-    {
-        'name': 'Nourison',
+    # Temporarily disabled — FTP credentials need verification
+    # {
+    #     'name': 'Nourison',
         'ftp_host': 'b2b.nourison.net',
         'ftp_port': 21,
         'ftp_user': '100559',
@@ -99,29 +100,57 @@ def get_file_sha(repo_path):
 
 
 def commit_file(repo_path, content_bytes, commit_message):
-    """Create or update a file in the GitHub repo."""
-    sha = get_file_sha(repo_path)
-    content_b64 = base64.b64encode(content_bytes).decode()
-    data = {
-        'message': commit_message,
-        'content': content_b64,
-        'branch': GITHUB_BRANCH,
-    }
-    if sha:
-        data['sha'] = sha  # Required for updates
-    github_request('PUT', f'/repos/{GITHUB_REPO}/contents/{repo_path}', data)
+    """Write file to disk (git push handled by workflow) or upload via API."""
+    if os.environ.get('USE_GIT_PUSH') == 'true':
+        # Write to disk — workflow will git commit and push
+        os.makedirs(os.path.dirname(repo_path) if os.path.dirname(repo_path) else '.', exist_ok=True)
+        with open(repo_path, 'wb') as f:
+            f.write(content_bytes)
+        print(f'  Wrote to disk: {repo_path} ({len(content_bytes)/1024:.1f} KB)')
+    else:
+        # Upload via GitHub API (only works for files < ~50MB)
+        sha = get_file_sha(repo_path)
+        content_b64 = base64.b64encode(content_bytes).decode()
+        data = {
+            'message': commit_message,
+            'content': content_b64,
+            'branch': GITHUB_BRANCH,
+        }
+        if sha:
+            data['sha'] = sha
+        github_request('PUT', f'/repos/{GITHUB_REPO}/contents/{repo_path}', data)
 
 
 # ── FTP DOWNLOAD ──────────────────────────────────────────────────────────────
 
-def download_from_ftp(host, port, user, password, remote_path):
-    """Connect to FTP server and download a file. Returns bytes."""
-    print(f'  Connecting to FTP {host}:{port} as {user}...')
+def download_from_ftp(host, port, user, password, remote_path, use_tls=False, list_files=False):
+    """Connect to FTP/FTPS server and download a file. Returns bytes."""
+    print(f'  Connecting to {"FTPS" if use_tls else "FTP"} {host}:{port} as {user}...')
     buf = io.BytesIO()
-    with ftplib.FTP() as ftp:
+    ftp_class = ftplib.FTP_TLS if use_tls else ftplib.FTP
+    with ftp_class() as ftp:
         ftp.connect(host, port, timeout=30)
         ftp.login(user, password)
+        if use_tls:
+            ftp.prot_p()  # Switch to secure data connection
         ftp.set_pasv(True)
+        if list_files or not remote_path:
+            # List directory to find the inventory file
+            files = []
+            ftp.retrlines('LIST', files.append)
+            print(f'  Directory listing:')
+            for f in files:
+                print(f'    {f}')
+            # Try to find inventory file automatically
+            for f in files:
+                parts = f.split()
+                fname = parts[-1] if parts else ''
+                if any(x in fname.lower() for x in ['inventory', 'inv', 'stock']):
+                    remote_path = '/' + fname
+                    print(f'  Auto-detected file: {remote_path}')
+                    break
+            if not remote_path:
+                raise Exception('Could not find inventory file — check directory listing above')
         print(f'  Downloading: {remote_path}')
         ftp.retrbinary(f'RETR {remote_path}', buf.write)
     size_kb = buf.tell() / 1024
@@ -149,6 +178,8 @@ def main():
                 vendor['ftp_user'],
                 vendor['ftp_pass'],
                 vendor['ftp_path'],
+                use_tls=vendor.get('use_tls', False),
+                list_files=vendor.get('list_files', False),
             )
 
             # Convert Excel to CSV if needed
