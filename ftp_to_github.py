@@ -10,10 +10,28 @@ import io
 import os
 import base64
 import json
+import csv
 import urllib.request
 import urllib.error
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
+
+def excel_to_csv(file_bytes, filename):
+    """Convert Excel file bytes to CSV string. Requires openpyxl."""
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
+        ws = wb.active
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in ws.iter_rows(values_only=True):
+            writer.writerow(['' if v is None else str(v) for v in row])
+        wb.close()
+        return output.getvalue().encode('utf-8')
+    except Exception as e:
+        print(f'  Excel conversion failed: {e} — uploading as-is')
+        return file_bytes
+
 
 VENDORS = [
     {
@@ -35,15 +53,16 @@ VENDORS = [
     #     'ftp_path': '/inventory.csv',
     #     'repo_path': 'inventory/eglo.csv',
     # },
-     {
-         'name': 'Nourison',
-         'ftp_host': 'b2b.nourison.net',
-         'ftp_port': 21,
-         'ftp_user': '100559',
-         'ftp_pass': os.environ.get('FTP_NOURISON_PASS', ''),
-         'ftp_path': '/100559/Nourison_Inventory.xlsx',
-         'repo_path': 'inventory/nourison.csv',
-     },
+    {
+        'name': 'Nourison',
+        'ftp_host': 'ftp.nourison.com',
+        'ftp_port': 21,
+        'ftp_user': 'studiolx',
+        'ftp_pass': os.environ['FTP_NOURISON_PASS'],
+        'ftp_path': '/inventory.csv',
+        'repo_path': 'inventory/nourison.csv',
+        'convert_excel': True,  # Convert Excel to CSV before committing
+    },
 ]
 
 GITHUB_TOKEN  = os.environ['GITHUB_TOKEN']
@@ -131,6 +150,11 @@ def main():
                 vendor['ftp_pass'],
                 vendor['ftp_path'],
             )
+
+            # Convert Excel to CSV if needed
+            if vendor.get('convert_excel') and not vendor['ftp_path'].endswith('.csv'):
+                print(f'  Converting Excel to CSV...')
+                file_bytes = excel_to_csv(file_bytes, vendor['ftp_path'])
 
             # Commit to GitHub repo
             commit_msg = f'inventory: update {vendor["name"]} — {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}'
