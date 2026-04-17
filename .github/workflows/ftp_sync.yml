@@ -30,12 +30,24 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade pip openpyxl
 
+      - name: Configure git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
       - name: Run FTP → GitHub sync
         env:
           FTP_SWCORP_PASS: ${{ secrets.FTP_SWCORP_PASS }}
           # FTP_EGLO_PASS: ${{ secrets.FTP_EGLO_PASS }}
           FTP_NOURISON_PASS: ${{ secrets.FTP_NOURISON_PASS }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided by GitHub Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          USE_GIT_PUSH: "true"
 
         run: python ftp_to_github.py
+
+      - name: Commit and push large files
+        run: |
+          git add inventory/
+          git diff --staged --quiet || git commit -m "inventory: update via FTP sync $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
