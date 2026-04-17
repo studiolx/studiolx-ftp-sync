@@ -28,13 +28,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install --upgrade pip
+        run: pip install --upgrade pip openpyxl
 
       - name: Run FTP → GitHub sync
         env:
           FTP_SWCORP_PASS: ${{ secrets.FTP_SWCORP_PASS }}
           # FTP_EGLO_PASS: ${{ secrets.FTP_EGLO_PASS }}
-          FTP_NOURISON_PASS: ${{ secrets.FTP_NOURISON_PASS }}
+          # FTP_NOURISON_PASS: ${{ secrets.FTP_NOURISON_PASS }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided by GitHub Actions
           GITHUB_REPOSITORY: ${{ github.repository }}
 
